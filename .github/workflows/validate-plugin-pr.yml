@@ -46,15 +46,6 @@ jobs:
             exit 1
           }
 
-          # Extract the new plugin entry
-          NEW_PLUGIN=$(git diff original.json new.json | grep '^\+' | grep -v '^\+\s*[,\[\]]' | sed 's/^\+//')
-
-          # Check if there's actually a new plugin entry
-          if [ -z "$NEW_PLUGIN" ]; then
-            echo "Error: No new plugin entry found" > validation_error.txt
-            exit 1
-          fi
-
           # Create a JavaScript file for detailed validation
           cat << 'EOF' > validate.js
           const fs = require('fs');
