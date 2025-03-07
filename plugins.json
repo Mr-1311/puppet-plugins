@@ -5,7 +5,7 @@
     "description": "list and run applications",
     "platforms": ["macos", "windows", "linux"],
     "repo": "https://github.com/Mr-1311/applications"
-  }
+  },
   {
     "name": "test workflow",
     "author": "puppet", 
