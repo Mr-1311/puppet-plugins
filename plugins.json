@@ -12,5 +12,12 @@
     "description": "plugin description",
     "platforms": ["macos", "windows", "linux"],
     "repo": "https://github.com/Mr-1311/puppet-plugins"
+  },
+  {
+    "name": "test workflow2",
+    "author": "puppet", 
+    "description": "plugin description",
+    "platforms": ["macos", "windows", "linux"],
+    "repo": "https://github.com/Mr-1311/puppet-plugins"
   }
 ]
