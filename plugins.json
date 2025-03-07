@@ -1,6 +1,6 @@
 [
   {
-    "name": "test workflow",
+    "name": "test  workflow",
     "author": "puppet", 
     "description": "plugin description",
     "platforms": ["test", "windows", "linux"],
