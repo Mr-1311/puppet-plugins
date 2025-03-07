@@ -70,11 +70,11 @@ jobs:
             }
           }
 
-          // Validate name
-          if (!newPlugin.name || 
-              newPlugin.name.toLowerCase().includes('puppet') || 
-              newPlugin.name.toLowerCase().includes('official')) {
-            fs.writeFileSync('validation_error.txt', 'Error: Invalid plugin name');
+          // Validate author
+          if (!newPlugin.author || 
+              newPlugin.author.toLowerCase().includes('puppet') || 
+              newPlugin.author.toLowerCase().includes('official')) {
+            fs.writeFileSync('validation_error.txt', 'Error: Invalid plugin author');
             process.exit(1);
           }
 
