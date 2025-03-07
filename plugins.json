@@ -11,6 +11,6 @@
     "author": "puppet", 
     "description": "plugin description",
     "platforms": ["macos", "windows", "linux"],
-    "repo": "wrong url"
+    "repo": "https://github.com/Mr-1311/puppet-plugins"
   }
 ]
