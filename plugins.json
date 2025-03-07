@@ -6,4 +6,11 @@
     "platforms": ["macos", "windows", "linux"],
     "repo": "https://github.com/Mr-1311/applications"
   }
+  {
+    "name": "test workflow",
+    "author": "puppet", 
+    "description": "plugin description",
+    "platforms": ["test", "windows", "linux"],
+    "repo": "wrong url"
+  }
 ]
