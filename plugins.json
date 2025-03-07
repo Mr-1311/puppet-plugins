@@ -7,7 +7,7 @@
     "repo": "https://github.com/Mr-1311/applications"
   },
   {
-    "name": "applications",
+    "name": "test workflow",
     "author": "puppet", 
     "description": "plugin description",
     "platforms": ["macos", "windows", "linux"],
