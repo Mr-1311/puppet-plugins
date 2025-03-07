@@ -8,7 +8,7 @@ on:
       - 'plugins.json'
 
 jobs:
-  validate-and-merge:
+  validate-and-label:
     runs-on: ubuntu-latest
     
     steps:
@@ -104,21 +104,16 @@ jobs:
           # Run the validation script
           node validate.js
 
-      # Configure git for auto-merge
-      - name: Configure Git
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-
-      # Merge the PR if validation passes
-      - name: Merge PR
+      # Add 'ready to merge' label and assign to Mr-1311 if validation passes
+      - name: Label and Assign PR
         if: success()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=$(echo $GITHUB_REF | cut -d'/' -f3)
-          gh pr merge $PR_NUMBER --squash --auto -t "Add new plugin" -b "Automatically merged by bot after validation"
-          
+          gh pr edit $PR_NUMBER --add-label "ready to merge" --add-assignee "Mr-1311"
+          gh pr comment $PR_NUMBER --body "✓ Validation successful! PR labeled as 'ready to merge' and assigned to @Mr-1311 for final review."
+
       # Comment on failure with specific reason
       - name: Comment on failure
         if: failure()
