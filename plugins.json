@@ -8,14 +8,14 @@
   },
   {
     "name": "test workflow",
-    "author": "puppet", 
+    "author": "author", 
     "description": "plugin description",
     "platforms": ["macos", "windows", "linux"],
     "repo": "https://github.com/Mr-1311/puppet-plugins"
   },
   {
     "name": "test workflow2",
-    "author": "puppet", 
+    "author": "author", 
     "description": "plugin description",
     "platforms": ["macos", "windows", "linux"],
     "repo": "https://github.com/Mr-1311/puppet-plugins"
