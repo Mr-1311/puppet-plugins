@@ -32,7 +32,7 @@ jobs:
           CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
           CHANGED_COUNT=$(echo "$CHANGED_FILES" | wc -l)
           if [ "$CHANGED_COUNT" -ne 1 ] || [ "$CHANGED_FILES" != "plugins.json" ]; then
-            echo "Error: PR must only modify plugins.json"
+            echo "Error: PR must only modify plugins.json" > validation_error.txt
             exit 1
           fi
 
@@ -42,7 +42,7 @@ jobs:
 
           # Validate JSON syntax
           jq . new.json > /dev/null || {
-            echo "Error: Invalid JSON syntax in plugins.json"
+            echo "Error: Invalid JSON syntax in plugins.json" > validation_error.txt
             exit 1
           }
 
@@ -51,7 +51,7 @@ jobs:
 
           # Check if there's actually a new plugin entry
           if [ -z "$NEW_PLUGIN" ]; then
-            echo "Error: No new plugin entry found"
+            echo "Error: No new plugin entry found" > validation_error.txt
             exit 1
           fi
 
@@ -63,7 +63,7 @@ jobs:
 
           // Check array length increased by exactly 1
           if (updated.length !== original.length + 1) {
-            console.error('Error: Only one plugin should be added');
+            fs.writeFileSync('validation_error.txt', 'Error: Only one plugin should be added');
             process.exit(1);
           }
 
@@ -74,7 +74,7 @@ jobs:
           const requiredFields = ['name', 'author', 'description', 'platforms', 'repo'];
           for (const field of requiredFields) {
             if (!newPlugin[field]) {
-              console.error(`Error: Missing required field: ${field}`);
+              fs.writeFileSync('validation_error.txt', `Error: Missing required field: ${field}`);
               process.exit(1);
             }
           }
@@ -83,13 +83,13 @@ jobs:
           if (!newPlugin.name || 
               newPlugin.name.toLowerCase().includes('puppet') || 
               newPlugin.name.toLowerCase().includes('official')) {
-            console.error('Error: Invalid plugin name');
+            fs.writeFileSync('validation_error.txt', 'Error: Invalid plugin name');
             process.exit(1);
           }
 
           // Check for duplicate names
           if (original.some(p => p.name === newPlugin.name)) {
-            console.error('Error: Plugin name already exists');
+            fs.writeFileSync('validation_error.txt', 'Error: Plugin name already exists');
             process.exit(1);
           }
 
@@ -97,13 +97,13 @@ jobs:
           const validPlatforms = ['macos', 'windows', 'linux'];
           if (!Array.isArray(newPlugin.platforms) || 
               !newPlugin.platforms.every(p => validPlatforms.includes(p))) {
-            console.error('Error: Invalid platforms specified');
+            fs.writeFileSync('validation_error.txt', 'Error: Invalid platforms specified');
             process.exit(1);
           }
 
           // Validate repo URL is a GitHub URL
           if (!newPlugin.repo.match(/^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$/)) {
-            console.error('Error: Invalid GitHub repository URL');
+            fs.writeFileSync('validation_error.txt', 'Error: Invalid GitHub repository URL');
             process.exit(1);
           }
 
@@ -128,14 +128,16 @@ jobs:
           PR_NUMBER=$(echo $GITHUB_REF | cut -d'/' -f3)
           gh pr merge $PR_NUMBER --squash --auto -t "Add new plugin" -b "Automatically merged by bot after validation"
           
-      # Comment on failure
+      # Comment on failure with specific reason
       - name: Comment on failure
         if: failure()
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           PR_NUMBER=$(echo $GITHUB_REF | cut -d'/' -f3)
-          gh pr comment $PR_NUMBER --body "Validation failed. Please check the workflow logs for details and ensure:
+          ERROR_MESSAGE=$(cat validation_error.txt)
+          gh pr comment $PR_NUMBER --body "Validation failed: $ERROR_MESSAGE
+          Please check the workflow logs for details and ensure:
           - Only plugins.json is modified
           - JSON syntax is valid
           - All required fields are present
