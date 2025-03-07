@@ -1,0 +1,144 @@
+name: Validate and Merge Plugin PRs
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'plugins.json'
+
+jobs:
+  validate-and-merge:
+    runs-on: ubuntu-latest
+    
+    steps:
+      # Checkout the code including the PR changes
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for comparison
+
+      # Set up Node.js to run validation scripts
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      # Validate the PR and plugins.json
+      - name: Validate PR and JSON
+        id: validation
+        run: |
+          # Check if only plugins.json was modified
+          CHANGED_FILES=$(git diff --name-only HEAD^ HEAD)
+          CHANGED_COUNT=$(echo "$CHANGED_FILES" | wc -l)
+          if [ "$CHANGED_COUNT" -ne 1 ] || [ "$CHANGED_FILES" != "plugins.json" ]; then
+            echo "Error: PR must only modify plugins.json"
+            exit 1
+          fi
+
+          # Save original and new JSON for comparison
+          git show HEAD^:plugins.json > original.json
+          cp plugins.json new.json
+
+          # Validate JSON syntax
+          jq . new.json > /dev/null || {
+            echo "Error: Invalid JSON syntax in plugins.json"
+            exit 1
+          }
+
+          # Extract the new plugin entry
+          NEW_PLUGIN=$(git diff original.json new.json | grep '^\+' | grep -v '^\+\s*[,\[\]]' | sed 's/^\+//')
+
+          # Check if there's actually a new plugin entry
+          if [ -z "$NEW_PLUGIN" ]; then
+            echo "Error: No new plugin entry found"
+            exit 1
+          fi
+
+          # Create a JavaScript file for detailed validation
+          cat << 'EOF' > validate.js
+          const fs = require('fs');
+          const original = JSON.parse(fs.readFileSync('original.json'));
+          const updated = JSON.parse(fs.readFileSync('new.json'));
+
+          // Check array length increased by exactly 1
+          if (updated.length !== original.length + 1) {
+            console.error('Error: Only one plugin should be added');
+            process.exit(1);
+          }
+
+          // Find the new plugin (assuming it's the last one)
+          const newPlugin = updated[updated.length - 1];
+          
+          // Required fields
+          const requiredFields = ['name', 'author', 'description', 'platforms', 'repo'];
+          for (const field of requiredFields) {
+            if (!newPlugin[field]) {
+              console.error(`Error: Missing required field: ${field}`);
+              process.exit(1);
+            }
+          }
+
+          // Validate name
+          if (!newPlugin.name || 
+              newPlugin.name.toLowerCase().includes('puppet') || 
+              newPlugin.name.toLowerCase().includes('official')) {
+            console.error('Error: Invalid plugin name');
+            process.exit(1);
+          }
+
+          // Check for duplicate names
+          if (original.some(p => p.name === newPlugin.name)) {
+            console.error('Error: Plugin name already exists');
+            process.exit(1);
+          }
+
+          // Validate platforms
+          const validPlatforms = ['macos', 'windows', 'linux'];
+          if (!Array.isArray(newPlugin.platforms) || 
+              !newPlugin.platforms.every(p => validPlatforms.includes(p))) {
+            console.error('Error: Invalid platforms specified');
+            process.exit(1);
+          }
+
+          // Validate repo URL is a GitHub URL
+          if (!newPlugin.repo.match(/^https:\/\/github\.com\/[a-zA-Z0-9-]+\/[a-zA-Z0-9-]+$/)) {
+            console.error('Error: Invalid GitHub repository URL');
+            process.exit(1);
+          }
+
+          console.log('Validation successful!');
+          EOF
+
+          # Run the validation script
+          node validate.js
+
+      # Configure git for auto-merge
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      # Merge the PR if validation passes
+      - name: Merge PR
+        if: success()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(echo $GITHUB_REF | cut -d'/' -f3)
+          gh pr merge $PR_NUMBER --squash --auto -t "Add new plugin" -b "Automatically merged by bot after validation"
+          
+      # Comment on failure
+      - name: Comment on failure
+        if: failure()
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          PR_NUMBER=$(echo $GITHUB_REF | cut -d'/' -f3)
+          gh pr comment $PR_NUMBER --body "Validation failed. Please check the workflow logs for details and ensure:
+          - Only plugins.json is modified
+          - JSON syntax is valid
+          - All required fields are present
+          - Plugin name is unique and doesn't contain 'puppet' or 'official'
+          - Platforms are valid
+          - Repo URL is a valid GitHub URL"
