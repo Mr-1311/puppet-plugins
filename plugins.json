@@ -1,7 +1,7 @@
 [
   {
     "name": "applications",
-    "author": "Official",
+    "author": "Puppet",
     "description": "list and run applications",
     "platforms": ["macos", "linux"],
     "repo": "https://github.com/Mr-1311/applications"
