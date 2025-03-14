@@ -3,7 +3,7 @@
     "name": "applications",
     "author": "Official",
     "description": "list and run applications",
-    "platforms": ["macos"],
+    "platforms": ["macos", "linux"],
     "repo": "https://github.com/Mr-1311/applications"
   }
 ]
